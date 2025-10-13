@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/src/lib/db'
 import { verifySession } from '@/src/lib/jwt'
 
-const COOKIE = process.env.SESSION_COOKIE || 'uzvideohub_session'
+const COOKIE = process.env.SESSION_COOKIE || 'sotuv_bolimi_session'
 
 async function getAdmin() {
   const token = cookies().get(COOKIE)?.value || ''
