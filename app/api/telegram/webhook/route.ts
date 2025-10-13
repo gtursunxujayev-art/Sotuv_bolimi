@@ -15,28 +15,23 @@ export async function POST(req: NextRequest) {
 
     if (!chatId) return NextResponse.json({ ok: true });
 
-    // Web App URL (must match your BotFather /setdomain root)
     const WEB_APP_URL = "https://sotuv-bolimi-kappa.vercel.app/miniapp";
 
-    // Default reply
     let replyText =
       "👋 Assalomu alaykum! Bu yerda *Sotuv bolimi* mini-ilovamizni ochishingiz mumkin.";
     let replyMarkup: any = {
-      inline_keyboard: [
-        [{ text: "🚀 Open Sotuv bolimi", web_app: { url: WEB_APP_URL } }],
-      ],
+      inline_keyboard: [[{ text: "🚀 Open Sotuv bolimi", web_app: { url: WEB_APP_URL } }]],
     };
 
     switch (text.toLowerCase()) {
       case "/start":
       case "start":
-        // keep defaults above
         break;
       case "/help":
-        replyText = "ℹ️ Mini ilovani ochish uchun tugmani bosing.";
+        replyText = "ℹ️ Mini-ilovani ochish uchun tugmani bosing.";
         break;
       default:
-        // Still show the web app button for any text
+        // still show web app button
         replyText = `Sotuv bolimi: ${text}`;
         break;
     }
@@ -53,8 +48,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
