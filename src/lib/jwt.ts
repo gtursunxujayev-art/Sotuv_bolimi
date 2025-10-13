@@ -5,10 +5,12 @@ import type { NextResponse } from "next/server";
 
 /**
  * Conception (what this change gives you)
- * - Fixes all “not exported: verifySession / signSession” compile errors.
- * - Centralizes JWT session handling for your API routes.
- * - Uses a consistent cookie name: SESSION_COOKIE (default "sotuv_bolimi_session").
- * - Works on Node.js runtime (recommended for jsonwebtoken).
+ * - Uses your cookie name **sotuv_bolimi_session** by default.
+ * - `verifySession()` now supports **both styles**:
+ *     1) `verifySession()` → reads token from cookie
+ *     2) `verifySession(token)` → verifies a passed token (for legacy code)
+ * - Exposes helpers to sign tokens and set/clear the session cookie.
+ * - Works in Node.js runtime (required for `jsonwebtoken`).
  */
 
 export type SessionPayload = JwtPayload & {
@@ -21,10 +23,11 @@ export type SessionPayload = JwtPayload & {
 };
 
 const SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "";
-export const SESSION_COOKIE = process.env.SESSION_COOKIE || "sotuv_bolimi_session";
+export const SESSION_COOKIE =
+  process.env.SESSION_COOKIE?.trim() || "sotuv_bolimi_session";
 
 if (!SECRET) {
-  // In production, set JWT_SECRET (or NEXTAUTH_SECRET) in Vercel → Environment Variables.
+  // In production, set JWT_SECRET (or NEXTAUTH_SECRET) in Vercel → Environment Variables
   console.warn("[jwt] JWT secret is missing. Set JWT_SECRET / NEXTAUTH_SECRET in env.");
 }
 
@@ -40,28 +43,28 @@ export function verifyJwt<T = any>(token: string): T {
 }
 
 /**
- * Exported API used across routes
- * - signSession(payload) → returns token string (you can set it to cookie yourself)
- * - verifySession() → reads cookie from the current request context and returns payload (or throws)
- * - setSessionCookie(res, token, days) → attaches cookie to a NextResponse
- * - clearSessionCookie(res) → removes session cookie
+ * High-level session helpers
+ * - signSession(payload, days) → creates a JWT string
+ * - verifySession() → reads cookie and verifies
+ * - verifySession(token) → verifies a provided token (back-compat)
+ * - setSessionCookie(res, token, days) / clearSessionCookie(res)
  */
 export function signSession(payload: SessionPayload, days: number = 30): string {
-  const token = signJwt(payload, `${days}d`);
-  return token;
+  return signJwt(payload, `${days}d`);
 }
 
-export function verifySession<T = SessionPayload>(): T {
-  const cookie = cookies().get(SESSION_COOKIE);
-  const token = cookie?.value;
-  if (!token) {
-    throw new Error("NO_SESSION");
-  }
+/** Back-compat signature: token is optional */
+export function verifySession<T = SessionPayload>(maybeToken?: string): T {
+  const token =
+    (maybeToken && maybeToken.trim()) ||
+    cookies().get(SESSION_COOKIE)?.value ||
+    "";
+
+  if (!token) throw new Error("NO_SESSION");
   return verifyJwt<T>(token);
 }
 
 export function setSessionCookie(res: NextResponse, token: string, days: number = 30): void {
-  // Attach httpOnly cookie
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: true,
