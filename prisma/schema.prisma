@@ -1,3 +1,4 @@
+// Prisma schema for Sotuv bolimi (improved from Uzvideohub)
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,59 +9,59 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  tgId      String   @unique
-  username  String? 
-  fullName  String?
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  purchases Purchase[]
-  orders    Order[]
+  id           String    @id @default(cuid())
+  tgId         String?   @unique // telegram user id (optional until mini-app auth)
+  phone        String?   @unique
+  username     String?   @unique
+  displayName  String?
+  coins        Int       @default(0)
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  purchases    Purchase[]
 }
 
 model Video {
-  id         String   @id @default(cuid())
-  title      String
-  description String?
-  priceCents Int       @default(0)
-  isFree     Boolean   @default(false)
-  // Direct URL to your file (S3/Bunny/Cloudflare R2/YouTube Unlisted/etc.)
-  mediaUrl   String
-  thumbUrl   String?
-  category   String?
-  createdAt  DateTime  @default(now())
-  purchases  Purchase[]
+  id           String    @id @default(cuid())
+  code         String?   @unique // optional internal short code
+  title        String
+  description  String
+  // You can store original URL (Yandex/Cloud/Telegram CDN) and proxied url
+  sourceUrl    String
+  thumbUrl     String?
+  category     String?
+  tags         String[]  @default([])
+  isFree       Boolean   @default(false)
+  price        Int       @default(0) // in coins or smallest currency unit (e.g. tiyins)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  purchases    Purchase[]
 }
 
 model Purchase {
-  id        String   @id @default(cuid())
-  userId    String
-  videoId   String
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())
+  userId      String
+  videoId     String
+  amountPaid  Int       @default(0)
+  currency    String?   // "UZS" or "COIN"
+  status      PurchaseStatus @default(SUCCESS)
+  createdAt   DateTime  @default(now())
 
-  user  User  @relation(fields: [userId], references: [id])
-  video Video @relation(fields: [videoId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  video       Video     @relation(fields: [videoId], references: [id])
 
-  @@unique([userId, videoId])
+  @@unique([userId, videoId]) // one user buys a video once
 }
 
-model Order {
-  id         String   @id @default(cuid())
-  userId     String
-  videoId    String
-  amount     Int      // cents
-  status     OrderStatus @default(PENDING)
-  provider   String?  // "stripe" | "click" | "payme" | etc.
-  payload    String?  // provider payload / metadata
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user  User  @relation(fields: [userId], references: [id])
-  video Video @relation(fields: [videoId], references: [id])
+enum Role {
+  USER
+  ADMIN
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  CANCELLED
+enum PurchaseStatus {
+  SUCCESS
+  REFUNDED
+  FAILED
 }
