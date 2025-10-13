@@ -1,4 +1,3 @@
-// Prisma schema for Sotuv bolimi (improved from Uzvideohub)
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +9,7 @@ datasource db {
 
 model User {
   id           String    @id @default(cuid())
-  tgId         String?   @unique // telegram user id (optional until mini-app auth)
+  tgId         String?   @unique
   phone        String?   @unique
   username     String?   @unique
   displayName  String?
@@ -20,20 +19,20 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   purchases    Purchase[]
+  coinTxs      CoinTransaction[]  @relation("UserCoinTxs")
 }
 
 model Video {
   id           String    @id @default(cuid())
-  code         String?   @unique // optional internal short code
+  code         String?   @unique
   title        String
   description  String
-  // You can store original URL (Yandex/Cloud/Telegram CDN) and proxied url
   sourceUrl    String
   thumbUrl     String?
   category     String?
   tags         String[]  @default([])
   isFree       Boolean   @default(false)
-  price        Int       @default(0) // in coins or smallest currency unit (e.g. tiyins)
+  price        Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -41,18 +40,33 @@ model Video {
 }
 
 model Purchase {
-  id          String    @id @default(cuid())
+  id          String          @id @default(cuid())
   userId      String
   videoId     String
-  amountPaid  Int       @default(0)
-  currency    String?   // "UZS" or "COIN"
-  status      PurchaseStatus @default(SUCCESS)
-  createdAt   DateTime  @default(now())
+  amountPaid  Int             @default(0)
+  currency    String?
+  status      PurchaseStatus  @default(SUCCESS)
+  createdAt   DateTime        @default(now())
 
-  user        User      @relation(fields: [userId], references: [id])
-  video       Video     @relation(fields: [videoId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+  video       Video           @relation(fields: [videoId], references: [id])
 
-  @@unique([userId, videoId]) // one user buys a video once
+  @@unique([userId, videoId])
+  @@index([userId, createdAt])
+  @@index([videoId, createdAt])
+}
+
+model CoinTransaction {
+  id        String     @id @default(cuid())
+  userId    String
+  amount    Int        // positive = grant, negative = deduct/spend
+  type      CoinTxType
+  note      String?
+  createdAt DateTime   @default(now())
+
+  user      User       @relation("UserCoinTxs", fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 enum Role {
@@ -64,4 +78,11 @@ enum PurchaseStatus {
   SUCCESS
   REFUNDED
   FAILED
+}
+
+enum CoinTxType {
+  GRANT     // admin adds coins
+  DEDUCT    // admin removes coins
+  PURCHASE  // user spends coins to buy a video
+  REFUND    // coins returned
 }
