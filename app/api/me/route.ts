@@ -1,26 +1,32 @@
 // app/api/me/route.ts
-export const runtime = 'nodejs'
+import { NextRequest, NextResponse } from "next/server";
+import { verifyJwt } from "@/src/lib/jwt";
 
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { prisma } from '@/src/lib/db'
-import { verifySession } from '@/src/lib/jwt'
+// Force Node.js runtime so 'jsonwebtoken' works
+export const runtime = "nodejs";
+// If you need dynamic evaluation
+export const dynamic = "force-dynamic";
 
-const COOKIE = process.env.SESSION_COOKIE || 'uzvideohub_session'
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const token = cookies().get(COOKIE)?.value || ''
-    if (!token) return NextResponse.json({ ok: true, user: null })
-    const s = verifySession<{ userId: number }>(token)
-    if (!s?.userId) return NextResponse.json({ ok: true, user: null })
+    // Try Authorization: Bearer <token>
+    const auth = req.headers.get("authorization");
+    let token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
 
-    const user = await prisma.user.findUnique({
-      where: { id: s.userId },
-      select: { id: true, username: true, name: true, coins: true, isAdmin: true },
-    })
-    return NextResponse.json({ ok: true, user: user || null })
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 })
+    // Or from cookie "token"
+    if (!token) {
+      const cookie = req.cookies.get("token");
+      token = cookie?.value || null;
+    }
+
+    if (!token) {
+      return NextResponse.json({ ok: false, error: "No token" }, { status: 401 });
+    }
+
+    const user = verifyJwt(token) as { id?: string; email?: string; [k: string]: any };
+
+    return NextResponse.json({ ok: true, user });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err.message || "Invalid token" }, { status: 401 });
   }
 }
