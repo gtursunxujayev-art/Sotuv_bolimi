@@ -19,7 +19,8 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   purchases    Purchase[]
-  coinTxs      CoinTransaction[]  @relation("UserCoinTxs")
+  coinTxs      CoinTransaction[]  @relation("UserCoinTxs")     // transactions affecting this user
+  adminCoinTxs CoinTransaction[]  @relation("AdminCoinTxs")    // transactions done by this admin
 }
 
 model Video {
@@ -59,14 +60,17 @@ model Purchase {
 model CoinTransaction {
   id        String     @id @default(cuid())
   userId    String
-  amount    Int        // positive = grant, negative = deduct/spend
+  adminId   String?    // who performed the action (optional)
+  amount    Int        // +GRANT / -DEDUCT / -PURCHASE / +REFUND
   type      CoinTxType
   note      String?
   createdAt DateTime   @default(now())
 
-  user      User       @relation("UserCoinTxs", fields: [userId], references: [id])
+  user      User       @relation("UserCoinTxs",  fields: [userId],  references: [id])
+  admin     User?      @relation("AdminCoinTxs", fields: [adminId], references: [id])
 
   @@index([userId, createdAt])
+  @@index([adminId, createdAt])
 }
 
 enum Role {
@@ -81,8 +85,8 @@ enum PurchaseStatus {
 }
 
 enum CoinTxType {
-  GRANT     // admin adds coins
-  DEDUCT    // admin removes coins
-  PURCHASE  // user spends coins to buy a video
-  REFUND    // coins returned
+  GRANT
+  DEDUCT
+  PURCHASE
+  REFUND
 }
