@@ -1,3 +1,14 @@
 {
-  "buildCommand": "npx prisma generate && npx prisma db push --accept-data-loss && next build"
+  "version": 2,
+  "name": "sotuv-bolimi",
+  "env": {
+    "NEXT_PUBLIC_APP_NAME": "Sotuv bo'limi",
+    "NEXT_PUBLIC_APP_URL": "https://sotuv-bolimi-kappa.vercel.app"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "X-App-Name", "value": "Sotuv bo'limi" }]
+    }
+  ]
 }
