@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// import your auth/session checker if you have one
+// Agar admin tekshiruvi bo'lsa, shu yerga import qiling:
 // import { getSession } from "@/lib/auth";
 
 export async function GET() {
@@ -11,8 +11,9 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     take: 100,
     include: {
+      // E’TIBOR: User da 'name' yo‘q, to‘g‘risi 'displayName'
       user:  { select: { id: true, displayName: true, username: true } },
-      admin: { select: { id: true, displayName: true, username: true } },
+      admin: { select: { id: true, displayName: true, username: true } }, // adminId qo‘shgan bo‘lsangiz
     },
   });
 
