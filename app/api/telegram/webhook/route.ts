@@ -11,30 +11,33 @@ export async function POST(req: NextRequest) {
     const update = await req.json();
     const msg = update?.message;
     const chatId = msg?.chat?.id;
-    const text = msg?.text?.trim();
+    const text = (msg?.text || "").trim();
 
-    if (!chatId || !text) return NextResponse.json({ ok: true });
+    if (!chatId) return NextResponse.json({ ok: true });
 
-    let reply = "";
+    // Web App URL (must match your BotFather /setdomain root)
+    const WEB_APP_URL = "https://sotuv-bolimi-kappa.vercel.app/miniapp";
+
+    // Default reply
+    let replyText =
+      "👋 Assalomu alaykum! Bu yerda *Sotuv bolimi* mini-ilovamizni ochishingiz mumkin.";
+    let replyMarkup: any = {
+      inline_keyboard: [
+        [{ text: "🚀 Open Sotuv bolimi", web_app: { url: WEB_APP_URL } }],
+      ],
+    };
 
     switch (text.toLowerCase()) {
       case "/start":
-        reply =
-          "👋 Assalomu alaykum!\nSiz *Sotuv bo'limi* botidasiz.\n\nBuyruqlar:\n/start — qayta boshlash\n/help — yordam\n/info — kompaniya haqida";
+      case "start":
+        // keep defaults above
         break;
-
       case "/help":
-        reply =
-          "ℹ️ Bu bot orqali siz CRM va sotuv tizimlariga ulanish bo‘yicha yordam olishingiz mumkin.";
+        replyText = "ℹ️ Mini ilovani ochish uchun tugmani bosing.";
         break;
-
-      case "/info":
-        reply =
-          "🏢 *Sotuv bo'limi*\nCRM, marketing va sotuv bo‘limlarini avtomatlashtirish uchun xizmat.\nVeb-sayt: https://sotuv-bolimi-kappa.vercel.app";
-        break;
-
       default:
-        reply = `Sotuv bo'limi javobi: ${text}`;
+        // Still show the web app button for any text
+        replyText = `Sotuv bolimi: ${text}`;
         break;
     }
 
@@ -43,8 +46,9 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: reply,
+        text: replyText,
         parse_mode: "Markdown",
+        reply_markup: replyMarkup,
       }),
     });
 
