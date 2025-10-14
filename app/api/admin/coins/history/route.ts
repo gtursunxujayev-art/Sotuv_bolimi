@@ -7,7 +7,7 @@ export async function GET() {
     take: 100,
     include: {
       user: { select: { id: true, displayName: true, username: true } },
-      // If (and only if) your schema has adminId/admin, you may later add:
+      // If your schema has admin relation and you want it:
       // admin: { select: { id: true, displayName: true, username: true } },
     },
   });
