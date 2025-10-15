@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "name": "sotuv-bolimi",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-App-Name", "value": "Sotuv bolimi" },
+        { "key": "X-Frame-Options", "value": "ALLOWALL" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors https://web.telegram.org https://*.telegram.org https://*.t.me https://t.me 'self';"
+        }
+      ]
+    }
+  ]
+}

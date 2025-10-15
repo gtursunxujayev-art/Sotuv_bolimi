@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  tgId         String?   @unique
+  phone        String?   @unique
+  username     String?   @unique
+  displayName  String?
+  coins        Int       @default(0)
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  purchases    Purchase[]
+  coinTxs      CoinTransaction[]  @relation("UserCoinTxs")     // transactions affecting this user
+  adminCoinTxs CoinTransaction[]  @relation("AdminCoinTxs")    // transactions done by this admin
+}
+
+model Video {
+  id           String    @id @default(cuid())
+  code         String?   @unique
+  title        String
+  description  String
+  sourceUrl    String
+  thumbUrl     String?
+  category     String?
+  tags         String[]  @default([])
+  isFree       Boolean   @default(false)
+  price        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  purchases    Purchase[]
+}
+
+model Purchase {
+  id          String          @id @default(cuid())
+  userId      String
+  videoId     String
+  amountPaid  Int             @default(0)
+  currency    String?
+  status      PurchaseStatus  @default(SUCCESS)
+  createdAt   DateTime        @default(now())
+
+  user        User            @relation(fields: [userId], references: [id])
+  video       Video           @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+  @@index([userId, createdAt])
+  @@index([videoId, createdAt])
+}
+
+model CoinTransaction {
+  id        String     @id @default(cuid())
+  userId    String
+  adminId   String?    // who performed the action (optional)
+  amount    Int        // +GRANT / -DEDUCT / -PURCHASE / +REFUND
+  type      CoinTxType
+  note      String?
+  createdAt DateTime   @default(now())
+
+  user      User       @relation("UserCoinTxs",  fields: [userId],  references: [id])
+  admin     User?      @relation("AdminCoinTxs", fields: [adminId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([adminId, createdAt])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PurchaseStatus {
+  SUCCESS
+  REFUNDED
+  FAILED
+}
+
+enum CoinTxType {
+  GRANT
+  DEDUCT
+  PURCHASE
+  REFUND
+}
